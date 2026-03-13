@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>IgAN治療互動測驗</title>
+  <style>
+    :root{
+      --primary:#155E75;   /* 深藍綠 */
+      --primary-2:#0E7490; /* 藍綠 */
+      --accent:#9333EA;    /* 紫色重點 */
+      --bg:#F8FAFC;        /* 淺底 */
+      --card:#FFFFFF;
+      --text:#0F172A;
+      --muted:#64748B;
+      --ok:#059669;        /* 綠：正面 */
+      --warn:#D97706;      /* 橘：需補充 */
+      --info:#2563EB;      /* 藍：說明 */
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+      color:var(--text); background:linear-gradient(180deg,#ECFEFF,#F8FAFC);
+    }
+    .wrap{
+      max-width:860px; margin:24px auto; padding:16px;
+    }
+    header{
+      background:var(--card);
+      border-radius:14px; padding:20px 22px;
+      box-shadow:0 10px 28px rgba(15,23,42,.06);
+      border:1px solid #e8eef6;
+    }
+    h1{
+      margin:0 0 8px; font-size:26px; color:var(--primary);
+      letter-spacing:.5px;
+    }
+    .subtitle{
+      margin:0; color:var(--muted); font-size:14px;
+    }
+
+    .card{
+      background:var(--card);
+      border-radius:16px; padding:20px;
+      margin-top:18px;
+      box-shadow:0 12px 34px rgba(15,23,42,.06);
+      border:1px solid #e8eef6;
+    }
+
+    /* 進度條 */
+    .progress{
+      height:10px; background:#E2E8F0; border-radius:999px; overflow:hidden; margin:10px 0 18px;
+    }
+    .bar{height:100%; width:0%; background:linear-gradient(90deg,var(--primary),var(--primary-2)); transition:width .35s ease;}
+
+    .q-title{font-size:20px; margin:6px 0 14px; line-height:1.5;}
+    .q-hint{font-size:13px; color:var(--muted); margin:-6px 0 12px;}
+
+    /* 選項 */
+    .option{
+      display:flex; gap:12px; align-items:flex-start;
+      border:1.5px solid #E5E7EB; border-radius:14px; padding:14px 14px;
+      background:#FCFDFF; cursor:pointer; margin-bottom:12px;
+      transition:transform .05s ease, border-color .2s ease, background .2s ease;
+    }
+    .option:hover{border-color:#CBD5E1; background:#F8FAFF;}
+    .option input{margin-top:3px; transform:scale(1.15)}
+    .option-label{font-weight:600; color:#0f1f34;}
+    .option-desc{font-size:14px; color:#334155;}
+    .option .stack{display:flex; flex-direction:column; gap:4px;}
+
+    /* 複選清單（Q4B） */
+    .multiselect{
+      padding:14px 14px 8px; border-radius:14px; border:1.5px dashed #CBD5E1; background:#FAFAFF; margin-bottom:14px;
+    }
+    .chips{display:flex; flex-wrap:wrap; gap:8px; margin-top:8px;}
+    .chip{
+      display:inline-flex; align-items:center; gap:8px;
+      background:#EEF2FF; color:#3730A3; border:1px solid #C7D2FE;
+      border-radius:999px; padding:8px 12px; font-size:13px;
+    }
+    .chip input{transform:scale(1.1)}
+
+    .actions{
+      display:flex; justify-content:flex-end; gap:8px; margin-top:14px;
+    }
+    .btn{
+      border:none; border-radius:999px; padding:10px 16px; font-weight:600; cursor:pointer;
+    }
+    .btn-primary{background:var(--primary); color:#fff;}
+    .btn-secondary{background:#E2E8F0; color:#0f1f34;}
+    .btn:disabled{opacity:.5; cursor:not-allowed}
+
+    /* 分析彈窗 */
+    .modal{
+      position:fixed; inset:0; display:none; place-items:center; background:rgba(2,8,23,.45); z-index:30;
+    }
+    .modal.show{display:grid;}
+    .modal-card{
+      width:min(680px,92vw); background:#fff; border-radius:16px; padding:22px 20px;
+      box-shadow:0 20px 60px rgba(2,8,23,.35); border:1px solid #e8eef6;
+      animation:pop .18s ease;
+    }
+    @keyframes pop{from{transform:scale(.98); opacity:.8} to{transform:scale(1); opacity:1}}
+    .analysis-title{font-size:18px; margin:0 0 6px; color:#111827;}
+    .analysis-body{font-size:15px; color:#1F2937; line-height:1.6;}
+    .tag{display:inline-block; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:700; margin-right:8px}
+    .tag.ok{background:#ECFDF5; color:var(--ok); border:1px solid #A7F3D0;}
+    .tag.warn{background:#FFF7ED; color:var(--warn); border:1px solid #FED7AA;}
+    .tag.info{background:#EFF6FF; color:var(--info); border:1px solid #BFDBFE;}
+    .modal-actions{display:flex; justify-content:flex-end; gap:8px; margin-top:16px;}
+
+    /* 完成畫面 */
+    .result{
+      display:none;
+    }
+    .result .pill{
+      display:inline-block; padding:6px 12px; border-radius:999px; font-size:12px;
+      background:#EEF2FF; color:#3730A3; border:1px solid #C7D2FE; margin-bottom:8px;
+    }
+    .result .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px; margin-top:10px;}
+    .result .box{background:#F8FAFC; border:1px solid #E5E7EB; border-radius:12px; padding:12px 14px;}
+    .muted{color:var(--muted)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>IgAN治療互動測驗</h1>
+      <p class="subtitle">總共6 題｜每題作答後會跳出專屬分析</p>
+    </header>
+
+    <!-- 問卷主卡片 -->
+    <section id="quiz" class="card">
+      <div class="progress" aria-label="progress"><div id="bar" class="bar" style="width:0%"></div></div>
+      <div id="stepLabel" class="muted" style="font-size:13px; margin-bottom:6px;">第 1 題（共 6 題）</div>
+      <div id="qTitle" class="q-title"></div>
+      <div id="qHint" class="q-hint"></div>
+      <form id="qForm" autocomplete="off"></form>
+      <div class="actions">
+        <button id="nextBtn" class="btn btn-primary" disabled>下一題</button>
+      </div>
+    </section>
+
+    <!-- 完成結果 -->
+    <section id="result" class="card result">
+      <span class="pill">測驗完成</span>
+      <h2 style="margin:6px 0 8px;">你的初步檢視</h2>
+      <p class="muted" style="margin-top:0">以下摘要可協助你與醫師在門診進行更有效的共同決策（SDM）。</p>
+      <div class="grid" id="resultGrid"></div>
+    </section>
+  </div>
+
+  <!-- 分析彈窗 -->
+  <div id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="analysisTitle">
+    <div class="modal-card">
+      <div class="analysis-title" id="analysisTitle"></div>
+      <div class="analysis-body" id="analysisBody"></div>
+      <div class="modal-actions">
+        <button id="closeModal" class="btn btn-primary">了解，進下一題</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /*** 問卷定義（固定 6 題） ***/
+    const QUESTIONS = [
+      {
+        id: "Q1",
+        title: "我清楚知道 IgA 腎絲球腎炎的成因，以及未來幾年應該如何追蹤腎臟功能。哪一句最符合你的狀態？",
+        hint: "例：追蹤指標可包含 eGFR、蛋白尿、血壓等（由醫師依個別狀況調整）",
+        type: "single",
+        options: [
+          { key: "A", label: "我對成因和追蹤方式都不太確定，需要有人重新解釋一次。", tag: "warn",
+            analysis: "這個情況很常見！IgAN 資訊本就複雜，願意重新了解是好開始。門診時可請醫師重點說明「成因」與「追蹤重點」，避免漏掉早期惡化訊號。"
+          },
+          { key: "B", label: "我大概知道成因，也知道需要定期追蹤，但細節還是不太清楚。", tag: "info",
+            analysis: "你已有基本觀念。再與醫師擬定追蹤節奏（例如每 3–6 個月評估腎功能、蛋白尿），能大幅提升自我管理能力。"
+          },
+          { key: "C", label: "我很清楚 IgAN 的發生原因，也知道需要追蹤 eGFR、蛋白尿、血壓等重要指標。", tag: "ok",
+            analysis: "很棒！你已具備完整認知，能更早察覺變化，也能與醫師做更精準的治療決策。"
+          },
+        ]
+      },
+      {
+        id: "Q2",
+        title: "我清楚知道目前服用每種藥物的原因，以及如何配合醫師處方達到最好療效。哪個敘述最像你？",
+        hint: "可與醫師確認每種藥的作用、服藥時間與追蹤方式。",
+        type: "single",
+        options: [
+          { key: "A", label: "拿藥像抽盲盒——吃是會吃，但不確定它們在體內做什麼。", tag: "warn",
+            analysis: "你已能按時服藥，這很重要！建議下次門診問：「這顆藥主要在保護腎臟的哪個部分？」提升理解能改善長期療效。"
+          },
+          { key: "B", label: "我知道大方向（如降血壓、減蛋白尿），但不確定怎麼吃最好。", tag: "info",
+            analysis: "你有不錯的基礎認知。與醫師釐清服藥細節（劑量、時間、交互作用）就能邁向更佳療效。"
+          },
+          { key: "C", label: "我完全理解每種藥的作用，也知道服藥時間、劑量與追蹤如何配合。", tag: "ok",
+            analysis: "完整配合型！研究顯示，了解用藥目的與方法更能維持療效並降低惡化風險。"
+          },
+        ]
+      },
+      {
+        id: "Q3",
+        title: "醫師說明：健保給付的是「基本治療」，而標準治療（SoC）是依照國際指引的最佳建議。你覺得下面哪句最像你的反應？",
+        hint: "健保是基本保障；標準治療依循指引與實證，不一定完全被健保給付。",
+        type: "single",
+        options: [
+          { key: "A", label: "蛤？所以健保不是給最完整的？", tag: "warn",
+            analysis: "是的，健保以基本保障為主；標準治療則依循最新指引與實證，未必全納入健保。了解差異有助於做出更安心的治療選擇。"
+          },
+          { key: "B", label: "知道有差別，但還不確定差在哪裡。", tag: "info",
+            analysis: "你已掌握重點。建議在門診詢問：「我符合哪些指引建議？各選項的預期效益與風險？」"
+          },
+          { key: "C", label: "理解！健保是基本款，標準治療是基於指引與證據的最好選擇。", tag: "ok",
+            analysis: "完全正確！這個概念能讓你在醫病共享決策（SDM）中更有把握。"
+          },
+        ]
+      },
+      {
+        id: "Q4",
+        title: "當醫師說明：「有些治療屬於自費，但在指引中被視為最佳選項。」你的考量會是？",
+        hint: "此題用於了解你的可負擔能力與彈性。",
+        type: "complex", /* A 單選 + B 複選群 + C 單選 */
+        options: [
+          { key: "A", label: "我目前只依靠薪水，額外支出很吃緊。", tag: "info",
+            analysis: "你有明確的財務考量。醫師可協助你在「必要 vs 適合」間找到平衡，並優先處理對腎保護影響最大的選項。"
+          },
+          { key: "B", label: "我有以下額外支持來源（可複選）：", multi: [
+              "保險理賠","家人支援","股票獲利","投資或被動收入","儲蓄"
+            ], tag: "ok",
+            analysis: (selected=[]) => {
+              const items = selected.length? selected.join("、") : "（未勾選）";
+              return `你具備多元的經濟緩衝來源：${items}。代表你對治療選擇有更多彈性，可與醫師共同評估效益與成本。`;
+            }
+          },
+          { key: "C", label: "如果效果好，我願意設定每月可接受的金額。", tag: "ok",
+            analysis: "你具備「健康投資思維」，對慢性病治療非常有幫助。可請醫師協助估算「每月總負擔 vs 預期效益」。"
+          },
+        ]
+      },
+      {
+        id: "Q5",
+        title: "確診當下，你會希望醫師如何告訴你治療選項？",
+        hint: "病人有知的權利與選擇的權利，這是 SDM 的核心。",
+        type: "single",
+        options: [
+          { key: "A", label: "只告訴我健保給付的。", tag: "warn",
+            analysis: "你偏向保守，但可能會錯過更多治療空間。可請醫師同時說明指引中的最佳選項，幫你評估利弊。"
+          },
+          { key: "B", label: "希望知道最完整的治療選項，沒有健保給付也沒關係。", tag: "info",
+            analysis: "務實型做法！你希望兼顧基本保障與更好的可能。可在門診請醫師逐一比較各選項的差異。"
+          },
+        ]
+      },
+      {
+        id: "Q6",
+        title: "做完前面題目後，你覺得自己現在對治療選擇的理解如何？",
+        hint: "此題同時作為本測驗的成效指標。",
+        type: "single",
+        options: [
+          { key: "A", label: "比剛開始清楚很多，知道健保 vs 標準治療差別。", tag: "ok",
+            analysis: "恭喜！你對治療結構的理解已大幅提升，和醫師溝通會更有效率。"
+          },
+          { key: "B", label: "有比較懂，但還想再問醫師。", tag: "info",
+            analysis: "你正在前進！把你的疑問列成清單，在下次門診逐一釐清即可。"
+          },
+          { key: "C", label: "還是很複雜，需要醫師再解釋。", tag: "warn",
+            analysis: "完全正常！醫療資訊很多，請放心把你的疑惑帶到門診，醫師會協助你釐清。"
+          },
+        ]
+      },
+    ];
+
+    /*** 狀態 ***/
+    let step = 0;                      // 0..5
+    const answers = {};                // { Q1: {key:'A'}, Q4: {key:'B', multi:[...]}, ... }
+    const quizEl = document.getElementById('quiz');
+    const qTitle = document.getElementById('qTitle');
+    const qHint  = document.getElementById('qHint');
+    const qForm  = document.getElementById('qForm');
+    const stepLabel = document.getElementById('stepLabel');
+    const bar    = document.getElementById('bar');
+    const nextBtn= document.getElementById('nextBtn');
+    const modal  = document.getElementById('modal');
+    const analysisTitle = document.getElementById('analysisTitle');
+    const analysisBody  = document.getElementById('analysisBody');
+    const closeModalBtn = document.getElementById('closeModal');
+    const resultSection = document.getElementById('result');
+    const resultGrid = document.getElementById('resultGrid');
+
+    function renderStep(){
+      const q = QUESTIONS[step];
+      stepLabel.textContent = `第 ${step+1} 題（共 6 題）`;
+      bar.style.width = `${(step)/6*100}%`;
+      qTitle.textContent = q.title;
+      qHint.textContent = q.hint || '';
+      qForm.innerHTML = '';
+      nextBtn.disabled = true;
+
+      if(q.type === 'single'){
+        q.options.forEach(opt=>{
+          const id = `${q.id}_${opt.key}`;
+          const row = document.createElement('label');
+          row.className = 'option';
+          row.htmlFor = id;
+          row.innerHTML = `
+            <input type="radio" name="${q.id}" id="${id}" value="${opt.key}">
+            <div class="stack">
+              <div class="option-label">${opt.key}. ${opt.label}</div>
+            </div>`;
+          qForm.appendChild(row);
+        });
+      }
+      else if(q.type === 'complex'){
+        // A 單選
+        const idA = `${q.id}_A`;
+        const rowA = document.createElement('label');
+        rowA.className = 'option';
+        rowA.htmlFor = idA;
+        rowA.innerHTML = `
+          <input type="radio" name="${q.id}" id="${idA}" value="A">
+          <div class="stack">
+            <div class="option-label">A. ${q.options[0].label}</div>
+          </div>`;
+        qForm.appendChild(rowA);
+
+        // B 複選群
+        const group = document.createElement('div');
+        group.className = 'multiselect';
+        group.innerHTML = `<div class="option-label" style="font-weight:700;margin-bottom:6px;">B. ${q.options[1].label}</div>`;
+        const chips = document.createElement('div'); chips.className = 'chips';
+        q.options[1].multi.forEach((txt,i)=>{
+          const cid = `${q.id}_B_${i}`;
+          const span = document.createElement('label');
+          span.className = 'chip';
+          span.htmlFor = cid;
+          span.innerHTML = `<input type="checkbox" id="${cid}" value="${txt}">${txt}`;
+          chips.appendChild(span);
+        });
+        group.appendChild(chips);
+        qForm.appendChild(group);
+
+        // C 單選
+        const idC = `${q.id}_C`;
+        const rowC = document.createElement('label');
+        rowC.className = 'option';
+        rowC.htmlFor = idC;
+        rowC.innerHTML = `
+          <input type="radio" name="${q.id}" id="${idC}" value="C">
+          <div class="stack">
+            <div class="option-label">C. ${q.options[2].label}</div>
+          </div>`;
+        qForm.appendChild(rowC);
+        // 小提示：複選群不影響題目數，仍屬同一題
+      }
+
+      // 監聽選擇
+      qForm.addEventListener('change', ()=>{
+        // 若是 Q4，允許只勾 B 群（複選）也算有效
+        if(q.id === 'Q4'){
+          const pickedRadio = qForm.querySelector(`input[type="radio"][name="${q.id}"]:checked`);
+          const anyCheck = qForm.querySelectorAll('input[type="checkbox"]:checked').length>0;
+          nextBtn.disabled = !(pickedRadio || anyCheck);
+        }else{
+          const picked = qForm.querySelector(`input[type="radio"][name="${q.id}"]:checked`);
+          nextBtn.disabled = !picked;
+        }
+      });
+    }
+
+    function showAnalysis(){
+      const q = QUESTIONS[step];
+      let chosenKey = null, chosenText = "", analysis = "", tag = "info";
+
+      if(q.type === 'single'){
+        const picked = qForm.querySelector(`input[type="radio"][name="${q.id}"]:checked`);
+        if(!picked) return;
+        chosenKey = picked.value;
+        const opt = q.options.find(o=>o.key===chosenKey);
+        chosenText = opt.label;
+        analysis = typeof opt.analysis==='function' ? opt.analysis() : opt.analysis;
+        tag = opt.tag || 'info';
+        answers[q.id] = { key: chosenKey, label: chosenText, tag };
+      }
+      else if(q.type === 'complex' && q.id==='Q4'){
+        const pickedRadio = qForm.querySelector(`input[type="radio"][name="${q.id}"]:checked`);
+        const checks = Array.from(qForm.querySelectorAll('input[type="checkbox"]:checked')).map(c => c.value);
+
+        if(pickedRadio){
+          chosenKey = pickedRadio.value; // A or C
+          const opt = q.options.find(o=>o.key===chosenKey);
+          chosenText = opt.label;
+          analysis = typeof opt.analysis==='function' ? opt.analysis() : opt.analysis;
+          tag = opt.tag || 'info';
+          answers[q.id] = { key: chosenKey, label: chosenText, tag };
+        }else if(checks.length>0){
+          chosenKey = 'B';
+          const opt = q.options[1];
+          chosenText = `有以下來源：${checks.join("、")}`;
+          analysis = typeof opt.analysis==='function' ? opt.analysis(checks) : opt.analysis;
+          tag = opt.tag || 'ok';
+          answers[q.id] = { key: 'B', multi: checks, label: chosenText, tag };
+        }else{
+          return; // 未作答
+        }
+      }
+
+      // 彈窗內容
+      const tagMap = { ok: '理解良好', warn:'需要補充', info:'提示' };
+      analysisTitle.innerHTML = `<span class="tag ${tag}">${tagMap[tag] || '提示'}</span>${q.id} 解析`;
+      analysisBody.textContent = analysis;
+      modal.classList.add('show');
+    }
+
+    function toNext(){
+      modal.classList.remove('show');
+      step++;
+      if(step < QUESTIONS.length){
+        renderStep();
+      }else{
+        finish();
+      }
+    }
+
+    function finish(){
+      // 進度 100% & 隱藏問卷、展示結果摘要
+      bar.style.width = '100%';
+      quizEl.style.display = 'none';
+      resultSection.style.display = 'block';
+      // 生成摘要卡片（依標籤）
+      const groups = {
+        ok:   { title:"你已具備良好理解", tips:"你與醫師的 SDM 會更有效率，可進一步討論個人化治療策略。" },
+        info: { title:"你在對的路上", tips:"把你的疑問整理一下，在門診逐一釐清，會更有把握。" },
+        warn: { title:"建議補充衛教", tips:"請醫師協助再說明一次關鍵概念（疾病成因、追蹤指標、各治療差異）。" },
+      };
+      resultGrid.innerHTML = '';
+      Object.entries(answers).forEach(([qid, val])=>{
+        const box = document.createElement('div');
+        const g = groups[val.tag] || groups.info;
+        box.className = 'box';
+        box.innerHTML = `
+          <div style="font-weight:700;margin-bottom:6px;">${qid}｜${g.title}</div>
+          <div style="font-size:14px; color:#0f1f34; margin-bottom:6px;">你的回答：${val.label}</div>
+          <div class="muted" style="font-size:13px;">建議：${g.tips}</div>
+        `;
+        resultGrid.appendChild(box);
+      });
+      // 在結果最末可加上「重新作答」按鈕（可選）
+      const restart = document.createElement('div');
+      restart.style.marginTop = '14px';
+      restart.innerHTML = `<button class="btn btn-secondary" onclick="location.reload()">重新作答</button>`;
+      resultGrid.appendChild(restart);
+      // 捲到結果
+      window.scrollTo({top:0, behavior:'smooth'});
+    }
+
+    // 綁定事件
+    nextBtn.addEventListener('click', (e)=>{
+      e.preventDefault();
+      showAnalysis();
+    });
+    closeModalBtn.addEventListener('click', toNext);
+
+    // 初始化
+    renderStep();
+  </script>
+</body>
+</html>
