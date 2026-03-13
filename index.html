@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>腎臟治療理解度｜情境式互動測驗（6 題）</title>
+  <title>IgAN治療互動測驗</title>
   <style>
     :root{
       --primary:#155E75;   /* 深藍綠 */
@@ -126,8 +126,8 @@
 <body>
   <div class="wrap">
     <header>
-      <h1>腎臟治療理解度｜情境式互動測驗</h1>
-      <p class="subtitle">固定 6 題｜每題作答後會跳出專屬分析 → 再進入下一題｜約 2–3 分鐘完成</p>
+      <h1>IgAN治療互動測驗</h1>
+      <p class="subtitle">總共6 題｜每題作答後會跳出專屬分析</p>
     </header>
 
     <!-- 問卷主卡片 -->
@@ -205,7 +205,7 @@
         hint: "健保是基本保障；標準治療依循指引與實證，不一定完全被健保給付。",
         type: "single",
         options: [
-          { key: "A", label: "蛤？所以健保不是給最好的？", tag: "warn",
+          { key: "A", label: "蛤？所以健保不是給最完整的？", tag: "warn",
             analysis: "是的，健保以基本保障為主；標準治療則依循最新指引與實證，未必全納入健保。了解差異有助於做出更安心的治療選擇。"
           },
           { key: "B", label: "知道有差別，但還不確定差在哪裡。", tag: "info",
@@ -247,18 +247,15 @@
           { key: "A", label: "只告訴我健保給付的。", tag: "warn",
             analysis: "你偏向保守，但可能會錯過更多治療空間。可請醫師同時說明指引中的最佳選項，幫你評估利弊。"
           },
-          { key: "B", label: "先講健保，再補充有沒有更好的。", tag: "info",
+          { key: "B", label: "希望知道最完整的治療選項，沒有健保給付也沒關係。", tag: "info",
             analysis: "務實型做法！你希望兼顧基本保障與更好的可能。可在門診請醫師逐一比較各選項的差異。"
-          },
-          { key: "C", label: "請一次把所有選項都講清楚，我有權選擇最適合我的。", tag: "ok",
-            analysis: "你完全符合 SDM 精神，最有機會與醫師共同找到最適合的方案。"
           },
         ]
       },
       {
         id: "Q6",
         title: "做完前面題目後，你覺得自己現在對治療選擇的理解如何？",
-        hint: "此題同時作為本測驗的教育成效指標。",
+        hint: "此題同時作為本測驗的成效指標。",
         type: "single",
         options: [
           { key: "A", label: "比剛開始清楚很多，知道健保 vs 標準治療差別。", tag: "ok",
